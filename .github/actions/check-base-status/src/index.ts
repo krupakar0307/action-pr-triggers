@@ -5,52 +5,69 @@ async function run(): Promise<void> {
   try {
     // Get inputs
     const token = core.getInput('github-token', { required: true });
-    const baseBranch = core.getInput('base-branch') || 'main';
-
-    // Create octokit client
+    const baseBranch = core.getInput('base-branch', { required: true });
+    
     const octokit = github.getOctokit(token);
-    const context = github.context;
+    const { owner, repo } = github.context.repo;
+
+    console.log(`🔍 Checking status for ${owner}/${repo}:${baseBranch}`);
 
     // Get the latest commit on base branch
     const { data: baseRef } = await octokit.rest.repos.getBranch({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
+      owner,
+      repo,
       branch: baseBranch,
     });
 
-    const latestCommitSha = baseRef.commit.sha;
+    const sha = baseRef.commit.sha;
+    console.log(`\n📌 Latest commit on ${baseBranch}: ${sha.substring(0, 7)}`);
 
-    // Get the combined status for the latest commit
-    const { data: status } = await octokit.rest.repos.getCombinedStatusForRef({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      ref: latestCommitSha,
-    });
-
-    // Get check runs for the commit
-    const { data: checkRuns } = await octokit.rest.checks.listForRef({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      ref: latestCommitSha,
-    });
+    // Get both status checks and check runs
+    const [statusRes, checksRes] = await Promise.all([
+      octokit.rest.repos.getCombinedStatusForRef({
+        owner,
+        repo,
+        ref: sha,
+      }),
+      octokit.rest.checks.listForRef({
+        owner,
+        repo,
+        ref: sha,
+      })
+    ]);
 
     // Analyze status checks
-    const isStatusSuccess = status.state === 'success';
+    console.log('\n📊 Status Checks:');
+    console.log(`Overall Status: ${statusRes.data.state.toUpperCase()}`);
     
+    statusRes.data.statuses.forEach(status => {
+      const emoji = status.state === 'success' ? '✅' : status.state === 'failure' ? '❌' : '⏳';
+      console.log(`${emoji} ${status.context}: ${status.state}`);
+    });
+
     // Analyze check runs
-    const hasFailedChecks = checkRuns.check_runs.some(
+    console.log('\n🔍 Check Runs:');
+    checksRes.data.check_runs.forEach(check => {
+      const status = check.conclusion || check.status;
+      const emoji = status === 'success' ? '✅' : status === 'failure' ? '❌' : '⏳';
+      console.log(`${emoji} ${check.name}: ${status}`);
+    });
+
+    // Final determination
+    const isStatusSuccess = statusRes.data.state === 'success';
+    const hasFailedChecks = checksRes.data.check_runs.some(
       check => check.conclusion === 'failure' || check.conclusion === 'cancelled'
     );
 
-    // Final status determination
     const isBaseGreen = isStatusSuccess && !hasFailedChecks;
 
     if (isBaseGreen) {
-      core.info(`✅ ${baseBranch} branch is GREEN - all checks are passing`);
+      console.log('\n✅ Base branch is GREEN - all checks are passing');
       core.setOutput('is_base_green', 'true');
     } else {
-      core.setFailed(`❌ ${baseBranch} branch is RED - some checks are failing`);
+      console.log('\n❌ Base branch is RED - some checks are failing');
       core.setOutput('is_base_green', 'false');
+      core.setFailed('Base branch checks are not passing');
     }
 
   } catch (error) {
