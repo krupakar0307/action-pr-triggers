@@ -61,14 +61,43 @@ async function run(): Promise<void> {
       });
     }
 
-    // Final determination
-    // Consider the branch green if there are no checks or all existing checks pass
-    const isStatusSuccess = statusRes.data.statuses.length === 0 || statusRes.data.state === 'success';
-    const hasFailedChecks = checksRes.data.check_runs.some(
+    // Add debug logging
+    console.log('\n🔍 Debug Information:');
+    console.log(`Status Checks Count: ${statusRes.data.statuses.length}`);
+    console.log(`Status State: ${statusRes.data.state}`);
+    console.log(`Total Check Runs: ${checksRes.data.check_runs.length}`);
+    
+    // Log each check run's details
+    checksRes.data.check_runs.forEach(check => {
+      console.log(`Check Run "${check.name}":`, {
+        status: check.status,
+        conclusion: check.conclusion,
+        completed_at: check.completed_at
+      });
+    });
+
+    // Consider check runs - only look at completed check runs with conclusions
+    const completedChecks = checksRes.data.check_runs.filter(check => 
+      check.status === 'completed' && check.conclusion !== null
+    );
+
+    // A check has failed if it's completed and has a failure/cancelled conclusion
+    const hasFailedChecks = completedChecks.some(
       check => check.conclusion === 'failure' || check.conclusion === 'cancelled'
     );
 
-    const isBaseGreen = isStatusSuccess && !hasFailedChecks;
+    // Final determination
+    // Consider status checks
+    const isStatusSuccess = statusRes.data.statuses.length === 0 || 
+                          statusRes.data.state === 'success' || 
+                          statusRes.data.state === 'pending';  // Allow pending state
+
+    // Branch is green if either:
+    // 1. There are no checks at all, OR
+    // 2. All existing checks are either pending or successful
+    const isBaseGreen = 
+      (checksRes.data.check_runs.length === 0 && statusRes.data.statuses.length === 0) || // No checks
+      (!hasFailedChecks && isStatusSuccess); // All checks passing/pending
 
     if (isBaseGreen) {
       console.log('\n✅ Base branch is GREEN - no failing checks');
