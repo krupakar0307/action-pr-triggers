@@ -1,0 +1,14 @@
+name: 'Check Base Branch Status'
+description: 'Checks if the base branch (main) status is green or red based on latest checks'
+inputs:
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+  base-branch:
+    description: 'Base branch to check (default: main)'
+    required: false
+    default: 'main'
+
+runs:
+  using: 'node16'
+  main: 'dist/index.js' 

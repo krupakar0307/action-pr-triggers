@@ -1,0 +1,25 @@
+name: 'Create Sync PR'
+description: 'Creates a PR to sync changes from main branch to target branches'
+inputs:
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+  source-branch:
+    description: 'Source branch (default: main)'
+    required: false
+    default: 'main'
+  target-branches:
+    description: 'Comma-separated list of target branches to sync with'
+    required: true
+  pr-title:
+    description: 'Title template for the PR'
+    required: false
+    default: 'chore: Sync $target_branch with $source_branch'
+  pr-body:
+    description: 'Body template for the PR'
+    required: false
+    default: 'Automated PR to sync $target_branch with $source_branch'
+
+runs:
+  using: 'node16'
+  main: 'dist/index.js' 
