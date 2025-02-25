@@ -1,16 +1,16 @@
-name: Check Base Branch Status
+name: Check Main Branch Status
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
-  check-base:
+  check-main-status:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       
-      - name: Check Base Branch Status
+      - name: Check Main Branch Status
         uses: ./.github/actions/check-base-status
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

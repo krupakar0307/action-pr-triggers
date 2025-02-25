@@ -1,1 +1,5 @@
- 
+{
+  "inputs": {
+    "target-branches": "develop,staging"
+  }
+} 
