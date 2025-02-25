@@ -40,21 +40,30 @@ async function run(): Promise<void> {
     console.log('\n📊 Status Checks:');
     console.log(`Overall Status: ${statusRes.data.state.toUpperCase()}`);
     
-    statusRes.data.statuses.forEach(status => {
-      const emoji = status.state === 'success' ? '✅' : status.state === 'failure' ? '❌' : '⏳';
-      console.log(`${emoji} ${status.context}: ${status.state}`);
-    });
+    if (statusRes.data.statuses.length === 0) {
+      console.log('No status checks found');
+    } else {
+      statusRes.data.statuses.forEach(status => {
+        const emoji = status.state === 'success' ? '✅' : status.state === 'failure' ? '❌' : '⏳';
+        console.log(`${emoji} ${status.context}: ${status.state}`);
+      });
+    }
 
     // Analyze check runs
     console.log('\n🔍 Check Runs:');
-    checksRes.data.check_runs.forEach(check => {
-      const status = check.conclusion || check.status;
-      const emoji = status === 'success' ? '✅' : status === 'failure' ? '❌' : '⏳';
-      console.log(`${emoji} ${check.name}: ${status}`);
-    });
+    if (checksRes.data.check_runs.length === 0) {
+      console.log('No check runs found');
+    } else {
+      checksRes.data.check_runs.forEach(check => {
+        const status = check.conclusion || check.status;
+        const emoji = status === 'success' ? '✅' : status === 'failure' ? '❌' : '⏳';
+        console.log(`${emoji} ${check.name}: ${status}`);
+      });
+    }
 
     // Final determination
-    const isStatusSuccess = statusRes.data.state === 'success';
+    // Consider the branch green if there are no checks or all existing checks pass
+    const isStatusSuccess = statusRes.data.statuses.length === 0 || statusRes.data.state === 'success';
     const hasFailedChecks = checksRes.data.check_runs.some(
       check => check.conclusion === 'failure' || check.conclusion === 'cancelled'
     );
@@ -62,7 +71,7 @@ async function run(): Promise<void> {
     const isBaseGreen = isStatusSuccess && !hasFailedChecks;
 
     if (isBaseGreen) {
-      console.log('\n✅ Base branch is GREEN - all checks are passing');
+      console.log('\n✅ Base branch is GREEN - no failing checks');
       core.setOutput('is_base_green', 'true');
     } else {
       console.log('\n❌ Base branch is RED - some checks are failing');
