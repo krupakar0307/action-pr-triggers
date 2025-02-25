@@ -81,29 +81,28 @@ async function run(): Promise<void> {
       check.status === 'completed' && check.conclusion !== null
     );
 
+    // Check if we have any successful checks
+    const hasSuccessfulChecks = completedChecks.some(
+      check => check.conclusion === 'success'
+    );
+
     // A check has failed if it's completed and has a failure/cancelled conclusion
     const hasFailedChecks = completedChecks.some(
       check => check.conclusion === 'failure' || check.conclusion === 'cancelled'
     );
 
-    // Final determination
-    // Consider status checks
-    const isStatusSuccess = statusRes.data.statuses.length === 0 || 
-                          statusRes.data.state === 'success' || 
-                          statusRes.data.state === 'pending';  // Allow pending state
-
-    // Branch is green if either:
-    // 1. There are no checks at all, OR
-    // 2. All existing checks are either pending or successful
+    // Branch is green if:
+    // 1. We have at least one successful check AND no failed checks, OR
+    // 2. There are no checks at all
     const isBaseGreen = 
-      (checksRes.data.check_runs.length === 0 && statusRes.data.statuses.length === 0) || // No checks
-      (!hasFailedChecks && isStatusSuccess); // All checks passing/pending
+      (hasSuccessfulChecks && !hasFailedChecks) || // Has successful checks and no failures
+      (checksRes.data.check_runs.length === 0 && statusRes.data.statuses.length === 0); // No checks at all
 
     if (isBaseGreen) {
-      console.log('\n✅ Base branch is GREEN - no failing checks');
+      console.log('\n✅ Base branch is GREEN - checks are passing');
       core.setOutput('is_base_green', 'true');
     } else {
-      console.log('\n❌ Base branch is RED - some checks are failing');
+      console.log('\n❌ Base branch is RED - no successful checks or some checks are failing');
       core.setOutput('is_base_green', 'false');
       core.setFailed('Base branch checks are not passing');
     }
