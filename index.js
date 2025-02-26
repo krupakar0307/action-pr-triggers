@@ -11,45 +11,48 @@ async function run() {
 
     // Get inputs
     const token = core.getInput('github-token', { required: true });
-    const mainBranch = core.getInput('main-branch', { required: false }) || 'main';
+    let branch = core.getInput('branch');
+    if (!branch) {
+      branch = 'main';
+    }
     
     // Create octokit client
     const octokit = github.getOctokit(token);
     const context = github.context;
     
-    core.info(`Checking status of ${mainBranch} branch...`);
+    core.info(`Checking status of ${branch} branch...`);
     
     // Get repository information
     const owner = context.repo.owner;
     const repo = context.repo.repo;
     
-    // Get the latest commit on the main branch
-    const { data: mainBranchRef } = await octokit.rest.git.getRef({
+    // Get the latest commit on the specified branch
+    const { data: branchRef } = await octokit.rest.git.getRef({
       owner,
       repo,
-      ref: `heads/${mainBranch}`
+      ref: `heads/${branch}`
     });
     
-    const mainBranchSha = mainBranchRef.object.sha;
+    const branchSha = branchRef.object.sha;
     
-    // Get the combined status for the latest commit on the main branch
+    // Get the combined status for the latest commit on the specified branch
     const { data: statusData } = await octokit.rest.repos.getCombinedStatusForRef({
       owner,
       repo,
-      ref: mainBranchSha
+      ref: branchSha
     });
 
     // Check if there are any statuses
     if (statusData.statuses.length === 0) {
-      core.setFailed(`⛔ Cannot proceed: No status checks found on the latest commit of ${mainBranch} branch.`);
+      core.setFailed(`⛔ Cannot proceed: No status checks found on the latest commit of ${branch} branch.`);
       return;
     }
 
-    // Check if main branch status is success
+    // Check if the branch status is success
     if (statusData.state === 'success') {
-      core.info(`✅ ${mainBranch} branch is GREEN`);
+      core.info(`✅ ${branch} branch is GREEN`);
     } else {
-      core.setFailed(`⛔ Cannot proceed: ${mainBranch} branch is RED (status: ${statusData.state})`);
+      core.setFailed(`⛔ Cannot proceed: ${branch} branch is RED (status: ${statusData.state})`);
     }
     
   } catch (error) {
@@ -57,4 +60,4 @@ async function run() {
   }
 }
 
-run(); 
+run();
