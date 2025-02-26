@@ -99,12 +99,12 @@ async function run(): Promise<void> {
       (checksRes.data.check_runs.length === 0 && statusRes.data.statuses.length === 0); // No checks at all
 
     if (isBaseGreen) {
-      console.log('\n✅ Base branch is GREEN - checks are passing');
+      console.log('\n✅ Main branch is healthy - proceeding with PR checks');
       core.setOutput('is_base_green', 'true');
     } else {
-      console.log('\n❌ Base branch is RED - no successful checks or some checks are failing');
+      console.log('\n❌ Main branch has failing checks - please fix main branch first');
       core.setOutput('is_base_green', 'false');
-      core.setFailed('Base branch checks are not passing');
+      core.setFailed('Cannot proceed: Main branch needs to be fixed first');
     }
 
   } catch (error) {
