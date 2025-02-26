@@ -1,0 +1,15 @@
+name: Main Branch Status Check
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  check-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check Main Branch Status
+        run: | 
+            echo "Checking main branch status..."
+            sleep 4
