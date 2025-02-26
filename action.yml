@@ -1,5 +1,5 @@
-name: 'Main Branch Status Check'
-description: 'Checks if the main branch is green before allowing PR to proceed. Designed for pull_request events.'
+name: 'Notify PRs'
+description: 'Triggers workflows for all open pull requests when changes are pushed to the base branch.'
 author: 'Your Name'
 
 inputs:
@@ -7,8 +7,8 @@ inputs:
     description: 'GitHub token for API access'
     required: true
     default: ${{ github.token }}
-  main-branch:
-    description: 'Name of the main branch to check'
+  base-branch:
+    description: 'Name of the base branch to check'
     required: false
     default: 'main'
 
