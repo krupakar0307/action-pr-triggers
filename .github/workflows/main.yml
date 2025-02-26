@@ -8,7 +8,7 @@ jobs:
   check-main:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v3eeeee
       - name: Check Main Branch Status
         run: | 
             echo "Checking main branch status..."
