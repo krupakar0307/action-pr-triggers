@@ -34495,6 +34495,12 @@ const github = __nccwpck_require__(5438);
 
 async function run() {
   try {
+    // Ensure the action is triggered by a pull request
+    if (github.context.eventName !== 'pull_request') {
+      core.setFailed('This action is designed to run only on pull requests.');
+      return;
+    }
+
     // Get inputs
     const token = core.getInput('github-token', { required: true });
     const mainBranch = core.getInput('main-branch', { required: false }) || 'main';
