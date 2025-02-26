@@ -34497,61 +34497,56 @@ async function run() {
   try {
     // Get inputs
     const token = core.getInput('github-token', { required: true });
-    const mainBranch = core.getInput('main-branch', { required: false }) || 'main';
+    const baseBranch = core.getInput('base-branch', { required: false }) || 'main';
     
     // Create octokit client
     const octokit = github.getOctokit(token);
     const context = github.context;
     
-    core.info(`Checking status of ${mainBranch} branch...`);
-    
     // Get repository information
     const owner = context.repo.owner;
     const repo = context.repo.repo;
     
-    // Get the latest commit on the main branch
-    const { data: mainBranchRef } = await octokit.rest.git.getRef({
+    // Get the latest commit on the base branch
+    const { data: baseBranchRef } = await octokit.rest.git.getRef({
       owner,
       repo,
-      ref: `heads/${mainBranch}`
+      ref: `heads/${baseBranch}`
     });
     
-    const mainBranchSha = mainBranchRef.object.sha;
-    core.info(`Main branch SHA: ${mainBranchSha}`);
+    const baseBranchSha = baseBranchRef.object.sha;
     
-    // Get the combined status for the latest commit on main
+    // Get check runs for the base branch
+    const { data: checkRunsData } = await octokit.rest.checks.listForRef({
+      owner,
+      repo,
+      ref: baseBranchSha
+    });
+    
+    // Get statuses for the base branch
     const { data: statusData } = await octokit.rest.repos.getCombinedStatusForRef({
       owner,
       repo,
-      ref: mainBranchSha
+      ref: baseBranchSha
     });
     
-    core.info(`Main branch status: ${statusData.state}`);
-    
-    // Check if main branch is green (success)
-    if (statusData.state !== 'success') {
-      core.setFailed(`Cannot proceed with PR because ${mainBranch} branch is not in a successful state (current state: ${statusData.state})`);
-      return;
-    }
-    
-    // Also check for any pending or failed required checks
-    const { data: checkRuns } = await octokit.rest.checks.listForRef({
-      owner,
-      repo,
-      ref: mainBranchSha
-    });
-    
-    const failedOrPendingChecks = checkRuns.check_runs.filter(
-      check => check.conclusion !== 'success' && check.conclusion !== 'skipped' && check.conclusion !== null
+    // Check for any failed checks
+    const failedChecks = checkRunsData.check_runs.filter(
+      check => check.conclusion === 'failure' || check.conclusion === 'cancelled' || check.conclusion === 'timed_out'
     );
     
-    if (failedOrPendingChecks.length > 0) {
-      const checkNames = failedOrPendingChecks.map(check => check.name).join(', ');
-      core.setFailed(`Cannot proceed with PR because ${mainBranch} branch has failed or pending checks: ${checkNames}`);
+    const failedStatuses = statusData.statuses.filter(
+      status => status.state === 'failure' || status.state === 'error'
+    );
+    
+    // If there are any failed checks or statuses, the base branch is red
+    if (failedChecks.length > 0 || failedStatuses.length > 0) {
+      core.setFailed(`⛔ BLOCKED: ${baseBranch} branch has failed checks. Fix the ${baseBranch} branch before merging this PR.`);
       return;
     }
     
-    core.info(`${mainBranch} branch is green! PR can proceed.`);
+    // If we get here, there are no failed checks, so the branch is considered green
+    core.info(`✅ ${baseBranch} branch is green. PR can proceed.`);
     
   } catch (error) {
     core.setFailed(`Action failed with error: ${error.message}`);

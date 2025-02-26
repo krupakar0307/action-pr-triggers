@@ -2,8 +2,10 @@ name: Test Action
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
-  workflow_dispatch:
+    branches:
+      - main
+      - develop
+      - release/*
 
 jobs:
   test:
@@ -12,8 +14,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         
-      - name: Check Main Branch Status
+      - name: Check Base Branch Status
         uses: ./
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          main-branch: 'main' 
+          base-branch: 'main'  # Explicitly specify the base branch 
