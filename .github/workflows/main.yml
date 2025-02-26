@@ -1,15 +1,16 @@
-name: Main Branch Status Check
+name: PR triggers
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main ]  # Trigger only when changes are pushed to the main branch
 
 jobs:
   check-main:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Check Main Branch Status
-        run: | 
-            echo "Checking main branch status..."
-            sleep 4
+      - name: Check Base Branch Status
+        uses: ./  # Uses the local action
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          base-branch: 'main'  # This should match the branch you want to monitor
