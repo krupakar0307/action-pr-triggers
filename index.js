@@ -32,12 +32,18 @@ async function run() {
     
     const mainBranchSha = mainBranchRef.object.sha;
     
-    // Get the combined status for the main branch
+    // Get the combined status for the latest commit on the main branch
     const { data: statusData } = await octokit.rest.repos.getCombinedStatusForRef({
       owner,
       repo,
       ref: mainBranchSha
     });
+
+    // Check if there are any statuses
+    if (statusData.statuses.length === 0) {
+      core.setFailed(`⛔ Cannot proceed: No status checks found on the latest commit of ${mainBranch} branch.`);
+      return;
+    }
 
     // Check if main branch status is success
     if (statusData.state === 'success') {
