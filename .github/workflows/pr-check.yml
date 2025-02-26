@@ -1,0 +1,16 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches: [ main ]  # Only run when PRs are targeting the main branch
+
+jobs:
+  check-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check Main Branch Status
+        uses: debuide/check-base-branch-status@v1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          main-branch: 'main' 

@@ -1,54 +1,82 @@
-const core = require('@actions/core');
-const github = require('@actions/github');
+import * as core from '@actions/core';
+import axios from 'axios';
 
 async function run() {
   try {
-    // Ensure the action is triggered by a pull request
-    if (github.context.eventName !== 'pull_request') {
-      core.setFailed('This action is designed to run only on pull requests.');
+    // Get environment variables
+    const token = process.env.GITHUB_TOKEN;
+    const repo = process.env.GITHUB_REPOSITORY;
+    const baseBranch = process.env.BASE_BRANCH || 'main';
+
+    if (!token || !repo) {
+      core.setFailed('Missing required environment variables: GITHUB_TOKEN or GITHUB_REPOSITORY');
       return;
     }
 
-    // Get inputs
-    const token = core.getInput('github-token', { required: true });
-    const mainBranch = core.getInput('main-branch', { required: false }) || 'main';
-    
-    // Create octokit client
-    const octokit = github.getOctokit(token);
-    const context = github.context;
-    
-    core.info(`Checking status of ${mainBranch} branch...`);
-    
-    // Get repository information
-    const owner = context.repo.owner;
-    const repo = context.repo.repo;
-    
-    // Get the latest commit on the main branch
-    const { data: mainBranchRef } = await octokit.rest.git.getRef({
-      owner,
-      repo,
-      ref: `heads/${mainBranch}`
-    });
-    
-    const mainBranchSha = mainBranchRef.object.sha;
-    
-    // Get the combined status for the main branch
-    const { data: statusData } = await octokit.rest.repos.getCombinedStatusForRef({
-      owner,
-      repo,
-      ref: mainBranchSha
-    });
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github.v3+json',
+    };
 
-    // Check if main branch status is success
-    if (statusData.state === 'success') {
-      core.info(`✅ ${mainBranch} branch is GREEN`);
-    } else {
-      core.setFailed(`⛔ Cannot proceed: ${mainBranch} branch is RED (status: ${statusData.state})`);
+    core.info(`Checking if base branch '${baseBranch}' exists...`);
+    const baseBranchUrl = `https://api.github.com/repos/${repo}/actions/runs?branch=${baseBranch}`;
+    const baseBranchResponse = await axios.get(baseBranchUrl, { headers });
+
+    if (baseBranchResponse.status !== 200 || !baseBranchResponse.data.workflow_runs.length) {
+      core.setFailed(`Base branch '${baseBranch}' not found or has no workflows`);
+      return;
     }
-    
+
+    core.info(`Fetching all open PRs...`);
+    const prUrl = `https://api.github.com/repos/${repo}/pulls?state=open`;
+    const prResponse = await axios.get(prUrl, { headers });
+
+    if (prResponse.status !== 200) {
+      core.setFailed(`Error fetching PRs: ${prResponse.data}`);
+      return;
+    }
+
+    const prs = prResponse.data;
+    if (!prs.length) {
+      core.info('No open PRs found.');
+      return;
+    }
+
+    core.info(`Found ${prs.length} open PRs. Triggering their workflows...`);
+
+    for (const pr of prs) {
+      const prBranch = pr.head.ref;
+      const prNumber = pr.number;
+
+      // Get latest workflow run for this PR
+      const workflowUrl = `https://api.github.com/repos/${repo}/actions/runs?branch=${prBranch}`;
+      const workflowResponse = await axios.get(workflowUrl, { headers });
+
+      if (workflowResponse.status !== 200) {
+        core.warning(`Error fetching workflows for PR #${prNumber}`);
+        continue;
+      }
+
+      const runs = workflowResponse.data.workflow_runs;
+      if (!runs.length) {
+        core.info(`No workflows found for PR #${prNumber}`);
+        continue;
+      }
+
+      // Trigger rerun of the latest workflow
+      const runId = runs[0].id;
+      const rerunUrl = `https://api.github.com/repos/${repo}/actions/runs/${runId}/rerun`;
+      const rerunResponse = await axios.post(rerunUrl, {}, { headers });
+
+      if (rerunResponse.status === 201) {
+        core.info(`✅ Triggered workflow rerun for PR #${prNumber} (${prBranch})`);
+      } else {
+        core.warning(`❌ Failed to trigger workflow for PR #${prNumber} (${prBranch})`);
+      }
+    }
   } catch (error) {
     core.setFailed(`Action failed with error: ${error.message}`);
   }
 }
 
-run(); 
+run();
