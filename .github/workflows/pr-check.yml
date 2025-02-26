@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Check Main Branch Status
-        uses: ./  # Uses the local action
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          main-branch: 'main' 
+        # uses: ./  # Uses the local action
+        # with:
+        #   github-token: ${{ secrets.GITHUB_TOKEN }}
+        #   main-branch: 'main' 
