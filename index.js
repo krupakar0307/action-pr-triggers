@@ -1,13 +1,12 @@
 import * as core from '@actions/core';
-import * as github from '@actions/github';
 import axios from 'axios';
 
 async function run() {
   try {
-    // Get inputs
-    const token = core.getInput('github-token', { required: true });
+    // Get environment variables
+    const token = process.env.GITHUB_TOKEN;
     const repo = process.env.GITHUB_REPOSITORY;
-    let baseBranch = core.getInput('base-branch') || 'main';
+    const baseBranch = process.env.BASE_BRANCH || 'main';
 
     if (!token || !repo) {
       core.setFailed('Missing required environment variables: GITHUB_TOKEN or GITHUB_REPOSITORY');
@@ -19,32 +18,61 @@ async function run() {
       Accept: 'application/vnd.github.v3+json',
     };
 
-    core.info(`Checking workflow runs for ${baseBranch} branch...`);
+    core.info(`Checking if base branch '${baseBranch}' exists...`);
+    const baseBranchUrl = `https://api.github.com/repos/${repo}/actions/runs?branch=${baseBranch}`;
+    const baseBranchResponse = await axios.get(baseBranchUrl, { headers });
 
-    // Fetch the latest completed workflow runs for the base branch
-    const url = `https://api.github.com/repos/${repo}/actions/runs?branch=${baseBranch}&status=completed`;
-    const response = await axios.get(url, { headers });
-    const runs = response.data.workflow_runs;
-
-    if (!runs || runs.length === 0) {
-      core.setFailed(`No workflow runs found for ${baseBranch} branch`);
+    if (baseBranchResponse.status !== 200 || !baseBranchResponse.data.workflow_runs.length) {
+      core.setFailed(`Base branch '${baseBranch}' not found or has no workflows`);
       return;
     }
 
-    // Get the most recent completed run
-    const latestRun = runs[0];
-    core.info(`Latest workflow run details:`);
-    core.info(`  Name: ${latestRun.name}`);
-    core.info(`  Status: ${latestRun.status}`);
-    core.info(`  Conclusion: ${latestRun.conclusion}`);
-    core.info(`  Created at: ${latestRun.created_at}`);
+    core.info(`Fetching all open PRs...`);
+    const prUrl = `https://api.github.com/repos/${repo}/pulls?state=open`;
+    const prResponse = await axios.get(prUrl, { headers });
 
-    const isGreen = latestRun.conclusion === 'success';
-    core.info(`Main branch status: ${isGreen ? 'GREEN' : 'RED'}`);
-    core.setOutput('is-main-green', isGreen.toString());
+    if (prResponse.status !== 200) {
+      core.setFailed(`Error fetching PRs: ${prResponse.data}`);
+      return;
+    }
 
-    if (!isGreen) {
-      core.setFailed(`⛔ Cannot proceed: ${baseBranch} branch is RED`);
+    const prs = prResponse.data;
+    if (!prs.length) {
+      core.info('No open PRs found.');
+      return;
+    }
+
+    core.info(`Found ${prs.length} open PRs. Triggering their workflows...`);
+
+    for (const pr of prs) {
+      const prBranch = pr.head.ref;
+      const prNumber = pr.number;
+
+      // Get latest workflow run for this PR
+      const workflowUrl = `https://api.github.com/repos/${repo}/actions/runs?branch=${prBranch}`;
+      const workflowResponse = await axios.get(workflowUrl, { headers });
+
+      if (workflowResponse.status !== 200) {
+        core.warning(`Error fetching workflows for PR #${prNumber}`);
+        continue;
+      }
+
+      const runs = workflowResponse.data.workflow_runs;
+      if (!runs.length) {
+        core.info(`No workflows found for PR #${prNumber}`);
+        continue;
+      }
+
+      // Trigger rerun of the latest workflow
+      const runId = runs[0].id;
+      const rerunUrl = `https://api.github.com/repos/${repo}/actions/runs/${runId}/rerun`;
+      const rerunResponse = await axios.post(rerunUrl, {}, { headers });
+
+      if (rerunResponse.status === 201) {
+        core.info(`✅ Triggered workflow rerun for PR #${prNumber} (${prBranch})`);
+      } else {
+        core.warning(`❌ Failed to trigger workflow for PR #${prNumber} (${prBranch})`);
+      }
     }
   } catch (error) {
     core.setFailed(`Action failed with error: ${error.message}`);

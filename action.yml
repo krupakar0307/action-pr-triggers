@@ -1,14 +1,14 @@
-name: 'Main Branch Status Check'
-description: 'Checks if the main branch is green before allowing PR to proceed. Designed for pull_request events.'
-author: 'Your Name'
+name: 'Trigger Open PR Workflows'
+description: 'Triggers workflows for all open pull requests when changes are pushed to the main branch.'
+author: 'Debuide org'
 
 inputs:
   github-token:
     description: 'GitHub token for API access'
     required: true
     default: ${{ github.token }}
-  main-branch:
-    description: 'Name of the main branch to check'
+  base-branch:
+    description: 'Name of the base branch to check and trigger PR workflows from'
     required: false
     default: 'main'
 
@@ -18,4 +18,4 @@ runs:
 
 branding:
   icon: 'git-pull-request'
-  color: 'green' 
+  color: 'blue' 
