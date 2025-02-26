@@ -10,7 +10,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Trigger Open PR Workflows
-        uses: ./  # Uses the local action
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          base-branch: 'main'
+        
+      - name: Check Main Branch Status
+        run: | 
+            echo "Checking main branch status..."
+            sleep 4
+
