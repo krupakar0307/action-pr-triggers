@@ -1,60 +1,51 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+import axios from 'axios';
 
 async function run() {
   try {
-    // Ensure the action is triggered by a pull request
-    if (github.context.eventName !== 'pull_request') {
-      core.setFailed('This action is designed to run only on pull requests.');
-      return;
-    }
-
     // Get inputs
     const token = core.getInput('github-token', { required: true });
-    let branch = core.getInput('branch');
-    if (!branch) {
-      branch = 'main';
-    }
-    
-    // Create octokit client
-    const octokit = github.getOctokit(token);
-    const context = github.context;
-    
-    core.info(`Checking status of ${branch} branch...`);
-    
-    // Get repository information
-    const owner = context.repo.owner;
-    const repo = context.repo.repo;
-    
-    // Get the latest commit on the specified branch
-    const { data: branchRef } = await octokit.rest.git.getRef({
-      owner,
-      repo,
-      ref: `heads/${branch}`
-    });
-    
-    const branchSha = branchRef.object.sha;
-    
-    // Get the combined status for the latest commit on the specified branch
-    const { data: statusData } = await octokit.rest.repos.getCombinedStatusForRef({
-      owner,
-      repo,
-      ref: branchSha
-    });
+    const repo = process.env.GITHUB_REPOSITORY;
+    let baseBranch = core.getInput('base-branch') || 'main';
 
-    // Check if there are any statuses
-    if (statusData.statuses.length === 0) {
-      core.setFailed(`⛔ Cannot proceed: No status checks found on the latest commit of ${branch} branch.`);
+    if (!token || !repo) {
+      core.setFailed('Missing required environment variables: GITHUB_TOKEN or GITHUB_REPOSITORY');
       return;
     }
 
-    // Check if the branch status is success
-    if (statusData.state === 'success') {
-      core.info(`✅ ${branch} branch is GREEN`);
-    } else {
-      core.setFailed(`⛔ Cannot proceed: ${branch} branch is RED (status: ${statusData.state})`);
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github.v3+json',
+    };
+
+    core.info(`Checking workflow runs for ${baseBranch} branch...`);
+
+    // Fetch the latest completed workflow runs for the base branch
+    const url = `https://api.github.com/repos/${repo}/actions/runs?branch=${baseBranch}&status=completed`;
+    const response = await axios.get(url, { headers });
+    const runs = response.data.workflow_runs;
+
+    if (!runs || runs.length === 0) {
+      core.setFailed(`No workflow runs found for ${baseBranch} branch`);
+      return;
     }
-    
+
+    // Get the most recent completed run
+    const latestRun = runs[0];
+    core.info(`Latest workflow run details:`);
+    core.info(`  Name: ${latestRun.name}`);
+    core.info(`  Status: ${latestRun.status}`);
+    core.info(`  Conclusion: ${latestRun.conclusion}`);
+    core.info(`  Created at: ${latestRun.created_at}`);
+
+    const isGreen = latestRun.conclusion === 'success';
+    core.info(`Main branch status: ${isGreen ? 'GREEN' : 'RED'}`);
+    core.setOutput('is-main-green', isGreen.toString());
+
+    if (!isGreen) {
+      core.setFailed(`⛔ Cannot proceed: ${baseBranch} branch is RED`);
+    }
   } catch (error) {
     core.setFailed(`Action failed with error: ${error.message}`);
   }
