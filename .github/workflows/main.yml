@@ -4,6 +4,11 @@ on:
   push:
     branches: [ main ]  # Trigger only when changes are pushed to the main branch
 
+permissions:
+  actions: write    # Required to trigger workflow runs
+  contents: read    # Required to check out code
+  pull-requests: read    # Required to read PR information
+
 jobs:
   notify-prs:
     runs-on: ubuntu-latest
