@@ -2,7 +2,7 @@ name: PR Check
 
 on:
   pull_request:
-    branches: [ main ]  # Only run when PRs are targeting main branch
+    branches: [ main ]  # Only run when PRs are targeting the main branch
 
 jobs:
   check-main:
