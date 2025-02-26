@@ -33,13 +33,12 @@ async function run() {
       ref: mainBranchSha
     });
 
-    // Simply check if main branch status is success
-    if (statusData.state !== 'success') {
+    // Check if main branch status is success
+    if (statusData.state === 'success') {
+      core.info(`✅ ${mainBranch} branch is GREEN`);
+    } else {
       core.setFailed(`⛔ Cannot proceed: ${mainBranch} branch is RED (status: ${statusData.state})`);
-      return;
     }
-    
-    core.info(`✅ ${mainBranch} branch is GREEN`);
     
   } catch (error) {
     core.setFailed(`Action failed with error: ${error.message}`);
