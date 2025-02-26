@@ -1,12 +1,4 @@
-<<<<<<< HEAD
-<<<<<<< HEAD:.github/workflows/check-base.yml
-name: Check Base Branch Status
-=======
 name: Test Action
->>>>>>> 5c70732 (scratch combo):.github/workflows/test.yml
-=======
-name: Test Action
->>>>>>> 5c70732 (scratch combo)
 
 on:
   pull_request:
@@ -14,18 +6,6 @@ on:
   workflow_dispatch:
 
 jobs:
-<<<<<<< HEAD
-<<<<<<< HEAD:.github/workflows/check-base.yml
-  check-base:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Check Base Branch Status
-        uses: ./.github/actions/check-base-status
-=======
-=======
->>>>>>> 5c70732 (scratch combo)
   test:
     runs-on: ubuntu-latest
     steps:
@@ -34,10 +14,6 @@ jobs:
         
       - name: Check Main Branch Status
         uses: ./
-<<<<<<< HEAD
->>>>>>> 5c70732 (scratch combo):.github/workflows/test.yml
-=======
->>>>>>> 5c70732 (scratch combo)
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           main-branch: 'main' 
