@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+import fs from 'fs';
 import axios from 'axios';
 
 async function writeOutput(name, value) {
