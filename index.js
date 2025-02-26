@@ -1,6 +1,6 @@
-const core = require('@actions/core');
-const axios = require('axios');
-const fs = require('fs');
+import * as core from '@actions/core';
+import * as github from '@actions/github';
+import axios from 'axios';
 
 async function writeOutput(name, value) {
     const outputFile = process.env.GITHUB_OUTPUT;
