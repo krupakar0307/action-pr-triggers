@@ -34495,6 +34495,12 @@ const github = __nccwpck_require__(5438);
 
 async function run() {
   try {
+    // Ensure the action is triggered by a pull request
+    if (github.context.eventName !== 'pull_request') {
+      core.setFailed('This action is designed to run only on pull requests.');
+      return;
+    }
+
     // Get inputs
     const token = core.getInput('github-token', { required: true });
     const mainBranch = core.getInput('main-branch', { required: false }) || 'main';
@@ -34525,13 +34531,12 @@ async function run() {
       ref: mainBranchSha
     });
 
-    // Simply check if main branch status is success
-    if (statusData.state !== 'success') {
+    // Check if main branch status is success
+    if (statusData.state === 'success') {
+      core.info(`✅ ${mainBranch} branch is GREEN`);
+    } else {
       core.setFailed(`⛔ Cannot proceed: ${mainBranch} branch is RED (status: ${statusData.state})`);
-      return;
     }
-    
-    core.info(`✅ ${mainBranch} branch is GREEN`);
     
   } catch (error) {
     core.setFailed(`Action failed with error: ${error.message}`);
