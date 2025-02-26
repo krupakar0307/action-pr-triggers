@@ -13,28 +13,8 @@ inputs:
     default: 'main'
 
 runs:
-  using: "composite"
-  steps:
-    - name: Check Main Branch Status
-      shell: bash
-      env:
-        GH_TOKEN: ${{ inputs.github-token }}
-        BRANCH: ${{ inputs.main-branch }}
-      run: |
-        # Get the latest commit status on main branch
-        STATUS=$(gh api \
-          -H "Accept: application/vnd.github+json" \
-          /repos/${{ github.repository }}/commits/$BRANCH/status \
-          --jq '.state')
-        
-        echo "Main branch status: $STATUS"
-        
-        if [ "$STATUS" != "success" ]; then
-          echo "::error::⛔ Cannot proceed: $BRANCH branch is RED (status: $STATUS)"
-          exit 1
-        fi
-        
-        echo "✅ $BRANCH branch is GREEN"
+  using: 'node16'
+  main: 'dist/index.js'
 
 branding:
   icon: 'git-pull-request'
