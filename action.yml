@@ -1,5 +1,5 @@
 name: 'Main Branch Status Check'
-description: 'Checks if the main branch is green before allowing PR to proceed'
+description: 'Checks if the main branch is green before allowing PR to proceed. Designed for pull_request events.'
 author: 'Your Name'
 
 inputs:
@@ -13,8 +13,28 @@ inputs:
     default: 'main'
 
 runs:
-  using: 'node16'
-  main: 'dist/index.js'
+  using: "composite"
+  steps:
+    - name: Check Main Branch Status
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        BRANCH: ${{ inputs.main-branch }}
+      run: |
+        # Get the latest commit status on main branch
+        STATUS=$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          /repos/${{ github.repository }}/commits/$BRANCH/status \
+          --jq '.state')
+        
+        echo "Main branch status: $STATUS"
+        
+        if [ "$STATUS" != "success" ]; then
+          echo "::error::⛔ Cannot proceed: $BRANCH branch is RED (status: $STATUS)"
+          exit 1
+        fi
+        
+        echo "✅ $BRANCH branch is GREEN"
 
 branding:
   icon: 'git-pull-request'
