@@ -1,0 +1,33 @@
+<<<<<<< HEAD:.github/workflows/check-base.yml
+name: Check Base Branch Status
+=======
+name: Test Action
+>>>>>>> 5c70732 (scratch combo):.github/workflows/test.yml
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+<<<<<<< HEAD:.github/workflows/check-base.yml
+  check-base:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Check Base Branch Status
+        uses: ./.github/actions/check-base-status
+=======
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Check Main Branch Status
+        uses: ./
+>>>>>>> 5c70732 (scratch combo):.github/workflows/test.yml
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          main-branch: 'main' 
