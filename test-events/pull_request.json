@@ -1,8 +1,0 @@
-{
-  "pull_request": {
-    "base": {
-      "ref": "main"
-    }
-  },
-  "action": "opened"
-} 

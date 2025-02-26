@@ -1,0 +1,21 @@
+name: 'Main Branch Status Check'
+description: 'Checks if the main branch is green before allowing PR to proceed'
+author: 'Your Name'
+
+inputs:
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+    default: ${{ github.token }}
+  main-branch:
+    description: 'Name of the main branch to check'
+    required: false
+    default: 'main'
+
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
+
+branding:
+  icon: 'git-pull-request'
+  color: 'green' 

@@ -1,0 +1,19 @@
+name: Test Action
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Check Main Branch Status
+        uses: ./
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          main-branch: 'main' 
