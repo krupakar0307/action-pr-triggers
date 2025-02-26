@@ -5,12 +5,11 @@ on:
     branches: [ main ]  # Trigger only when changes are pushed to the main branch
 
 jobs:
-  check-main:
+  notify-prs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Notify PRs
-        uses: ./  # Uses the local action
+        uses: ./
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          base-branch: 'main'  # This should match the branch you want to monitor

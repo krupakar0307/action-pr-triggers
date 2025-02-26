@@ -1,5 +1,5 @@
 name: 'Notify PRs'
-description: 'Triggers workflows for all open pull requests when changes are pushed to the base branch.'
+description: 'Triggers workflows for all open pull requests'
 author: 'Your Name'
 
 inputs:
@@ -7,10 +7,6 @@ inputs:
     description: 'GitHub token for API access'
     required: true
     default: ${{ github.token }}
-  base-branch:
-    description: 'Name of the base branch to check'
-    required: false
-    default: 'main'
 
 runs:
   using: 'node20'
@@ -18,4 +14,4 @@ runs:
 
 branding:
   icon: 'git-pull-request'
-  color: 'green' 
+  color: 'blue' 
