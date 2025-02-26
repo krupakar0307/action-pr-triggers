@@ -16,6 +16,5 @@ jobs:
       - uses: actions/checkout@v3
       - name: Notify PRs
         uses: ./
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          base-branch: 'main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
