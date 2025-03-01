@@ -1,5 +1,5 @@
-name: 'Notify PRs'
-description: 'Triggers workflows for all open pull requests'
+name: 'PR Workflow Rerunner'
+description: 'Triggers workflow reruns for open PRs'
 author: 'Your Name'
 
 inputs:
@@ -9,9 +9,15 @@ inputs:
     default: ${{ github.token }}
 
 runs:
-  using: 'node20'
-  main: 'dist/index.js'
+  using: 'docker'
+  image: 'Dockerfile'
 
 branding:
-  icon: 'git-pull-request'
-  color: 'blue' 
+  icon: 'refresh-cw'
+  color: 'blue'
+
+outputs:
+  rerun-count:
+    description: 'Number of PR workflows that were rerun'
+  rerun-status:
+    description: 'Status of the rerun operation (success/failure)' 
